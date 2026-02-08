@@ -1,0 +1,680 @@
+-- [[ โค้ดตรวจจับแผง GUI ซ้ำ (Anti-Duplicate) ]]
+local CoreGui = game:GetService("CoreGui")
+if CoreGui:FindFirstChild("RayfieldLoader") or CoreGui:FindFirstChild("BOSS69_ToggleUI") then
+    warn("BOSS69: Script is already running!")
+    return
+end
+
+-- [[ Rayfield-Style Loading Screen by BOSS69 ]]
+local TweenService = game:GetService("TweenService")
+local LoaderFinished = false
+
+local function CreateLoading()
+    local Loader = Instance.new("ScreenGui")
+    Loader.Name = "RayfieldLoader"
+    Loader.Parent = CoreGui
+    Loader.DisplayOrder = 999
+
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Name = "MainFrame"
+    MainFrame.Size = UDim2.new(0, 350, 0, 100)
+    MainFrame.Position = UDim2.new(0.5, -175, 0.5, -50)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    MainFrame.BorderSizePixel = 0
+    MainFrame.ClipsDescendants = true
+    MainFrame.Parent = Loader
+
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 8)
+    Corner.Parent = MainFrame
+
+    local Stroke = Instance.new("UIStroke")
+    Stroke.Thickness = 2
+    Stroke.Color = Color3.fromRGB(45, 45, 45)
+    Stroke.Parent = MainFrame
+
+    local Title = Instance.new("TextLabel")
+    Title.Size = UDim2.new(1, 0, 0.6, 0)
+    Title.BackgroundTransparency = 1
+    Title.Font = Enum.Font.GothamBold
+    Title.Text = "BOSS69"
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Title.TextSize = 24
+    Title.Parent = MainFrame
+
+    local SubTitle = Instance.new("TextLabel")
+    SubTitle.Size = UDim2.new(1, 0, 0.4, 0)
+    SubTitle.Position = UDim2.new(0, 0, 0.5, 0)
+    SubTitle.BackgroundTransparency = 1
+    SubTitle.Font = Enum.Font.Gotham
+    SubTitle.Text = "กำลังเตรียมความพร้อม..."
+    SubTitle.TextColor3 = Color3.fromRGB(180, 180, 180)
+    SubTitle.TextSize = 14
+    SubTitle.Parent = MainFrame
+
+    local ProgressBack = Instance.new("Frame")
+    ProgressBack.Size = UDim2.new(1, -40, 0, 4)
+    ProgressBack.Position = UDim2.new(0, 20, 1, -15)
+    ProgressBack.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    ProgressBack.BorderSizePixel = 0
+    ProgressBack.Parent = MainFrame
+
+    local ProgressBar = Instance.new("Frame")
+    ProgressBar.Size = UDim2.new(0, 0, 1, 0)
+    ProgressBar.BackgroundColor3 = Color3.fromRGB(0, 230, 255)
+    ProgressBar.BorderSizePixel = 0
+    ProgressBar.Parent = ProgressBack
+
+    task.wait(0.5)
+    TweenService:Create(ProgressBar, TweenInfo.new(1.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(0.7, 0, 1, 0)}):Play()
+    task.wait(1.5)
+    SubTitle.Text = "กำลังโหลดข้อมูลภาษาไทย..."
+    TweenService:Create(ProgressBar, TweenInfo.new(1, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(1, 0, 1, 0)}):Play()
+    task.wait(1)
+    
+    local CloseTween = TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0)})
+    CloseTween:Play()
+    CloseTween.Completed:Wait()
+    
+    Loader:Destroy()
+    LoaderFinished = true
+end
+
+CreateLoading()
+repeat task.wait() until LoaderFinished == true
+
+-- [[ สคริปต์หลัก Fluent ]]
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/oopplprt041-crypto/Riririrri/refs/heads/main/Didjd.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+
+local Window = Fluent:CreateWindow({
+    Title = "BOSS69 (เมนูเม็ดแตด)",
+    SubTitle = "โดย BOSS69",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 460),
+    Acrylic = true,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl 
+})
+
+-- [[ ระบบพับเก็บแผงหลักแบบหรู (Enhanced Collapse System) ]]
+local IsCollapsed = false
+local MainFrame = nil
+local OriginalSize = nil
+local OriginalPosition = nil
+local CollapsedSize = UDim2.new(0, 70, 0, 70)
+
+local function SetupCollapseSystem()
+    task.wait(0.5)
+    
+    MainFrame = CoreGui:FindFirstChild("Fluent") and CoreGui.Fluent:FindFirstChild("Main")
+    if not MainFrame then 
+        warn("ไม่พบ Main Frame")
+        return 
+    end
+    
+    OriginalSize = MainFrame.Size
+    OriginalPosition = MainFrame.Position
+    
+    -- สร้างปุ่มพับเก็บสวยๆ
+    local CollapseButton = Instance.new("ImageButton")
+    CollapseButton.Name = "CollapseButton"
+    CollapseButton.Parent = MainFrame
+    CollapseButton.AnchorPoint = Vector2.new(1, 0)
+    CollapseButton.Position = UDim2.new(1, -10, 0, 10)
+    CollapseButton.Size = UDim2.new(0, 32, 0, 32)
+    CollapseButton.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+    CollapseButton.BackgroundTransparency = 0.2
+    CollapseButton.Image = "rbxassetid://7733964370"
+    CollapseButton.ImageColor3 = Color3.fromRGB(255, 255, 255)
+    CollapseButton.ZIndex = 1000
+    
+    local CollapseCorner = Instance.new("UICorner")
+    CollapseCorner.CornerRadius = UDim.new(0, 10)
+    CollapseCorner.Parent = CollapseButton
+    
+    local CollapseStroke = Instance.new("UIStroke")
+    CollapseStroke.Thickness = 2
+    CollapseStroke.Color = Color3.fromRGB(0, 230, 255)
+    CollapseStroke.Transparency = 0.6
+    CollapseStroke.Parent = CollapseButton
+    
+    local CollapseGlow = Instance.new("UIGradient")
+    CollapseGlow.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 230, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 230))
+    }
+    CollapseGlow.Parent = CollapseStroke
+    
+    -- เอฟเฟกต์ Hover
+    CollapseButton.MouseEnter:Connect(function()
+        TweenService:Create(CollapseButton, TweenInfo.new(0.2), {
+            BackgroundTransparency = 0,
+            Size = UDim2.new(0, 36, 0, 36)
+        }):Play()
+        TweenService:Create(CollapseStroke, TweenInfo.new(0.2), {Transparency = 0.2}):Play()
+    end)
+    
+    CollapseButton.MouseLeave:Connect(function()
+        TweenService:Create(CollapseButton, TweenInfo.new(0.2), {
+            BackgroundTransparency = 0.2,
+            Size = UDim2.new(0, 32, 0, 32)
+        }):Play()
+        TweenService:Create(CollapseStroke, TweenInfo.new(0.2), {Transparency = 0.6}):Play()
+    end)
+    
+    -- ฟังก์ชันพับเก็บ/ขยาย
+    local function ToggleCollapse()
+        IsCollapsed = not IsCollapsed
+        
+        if IsCollapsed then
+            -- === พับเก็บ ===
+            for _, child in pairs(MainFrame:GetChildren()) do
+                if child ~= CollapseButton and child:IsA("GuiObject") and 
+                   child.Name ~= "UICorner" and child.Name ~= "UIStroke" then
+                    TweenService:Create(child, TweenInfo.new(0.25), {GroupTransparency = 1}):Play()
+                end
+            end
+            
+            task.wait(0.15)
+            
+            TweenService:Create(MainFrame, TweenInfo.new(0.7, Enum.EasingStyle.Back, Enum.EasingDirection.InOut), {
+                Size = CollapsedSize,
+                Position = UDim2.new(1, -80, 0, 10)
+            }):Play()
+            
+            TweenService:Create(CollapseButton, TweenInfo.new(0.5, Enum.EasingStyle.Back), {Rotation = 180}):Play()
+            
+            TweenService:Create(CollapseStroke, TweenInfo.new(0.4), {Thickness = 4, Transparency = 0}):Play()
+            task.wait(0.4)
+            TweenService:Create(CollapseStroke, TweenInfo.new(0.3), {Thickness = 2, Transparency = 0.6}):Play()
+            
+        else
+            -- === ขยายกลับ ===
+            TweenService:Create(MainFrame, TweenInfo.new(0.7, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                Size = OriginalSize,
+                Position = OriginalPosition
+            }):Play()
+            
+            TweenService:Create(CollapseButton, TweenInfo.new(0.5, Enum.EasingStyle.Back), {Rotation = 0}):Play()
+            
+            task.wait(0.4)
+            
+            for _, child in pairs(MainFrame:GetChildren()) do
+                if child ~= CollapseButton and child:IsA("GuiObject") then
+                    TweenService:Create(child, TweenInfo.new(0.35, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {GroupTransparency = 0}):Play()
+                end
+            end
+        end
+        
+        -- เอฟเฟกต์คลิก
+        TweenService:Create(CollapseButton, TweenInfo.new(0.1), {Size = UDim2.new(0, 28, 0, 28)}):Play()
+        task.wait(0.1)
+        TweenService:Create(CollapseButton, TweenInfo.new(0.15, Enum.EasingStyle.Back), {Size = UDim2.new(0, 32, 0, 32)}):Play()
+    end
+    
+    CollapseButton.MouseButton1Click:Connect(ToggleCollapse)
+    
+    -- ดับเบิลคลิกที่แผงเพื่อพับเก็บ
+    local lastClickTime = 0
+    MainFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            local currentTime = tick()
+            if currentTime - lastClickTime < 0.35 then
+                ToggleCollapse()
+            end
+            lastClickTime = currentTime
+        end
+    end)
+end
+
+task.spawn(SetupCollapseSystem)
+
+-- [[ ฟังก์ชันเสริมสำหรับการลากปรับขนาด (Resize) ]]
+local function EnableResize()
+    task.wait(0.3)
+    local MainFrame = CoreGui.Fluent.Main
+    local ResizeBtn = Instance.new("ImageButton")
+    
+    ResizeBtn.Name = "ResizeHandle"
+    ResizeBtn.Parent = MainFrame
+    ResizeBtn.Position = UDim2.new(1, -15, 1, -15)
+    ResizeBtn.Size = UDim2.new(0, 15, 0, 15)
+    ResizeBtn.BackgroundTransparency = 1
+    ResizeBtn.Image = "rbxassetid://10615415059"
+    ResizeBtn.ImageColor3 = Color3.fromRGB(255, 255, 255)
+    ResizeBtn.ImageTransparency = 0.5
+
+    local UserInputService = game:GetService("UserInputService")
+    local dragging, dragStart, startSize = false, nil, nil
+
+    ResizeBtn.MouseButton1Down:Connect(function()
+        dragging = true
+        dragStart = UserInputService:GetMouseLocation()
+        startSize = MainFrame.Size
+        OriginalSize = startSize
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local diff = UserInputService:GetMouseLocation() - dragStart
+            MainFrame.Size = UDim2.new(0, math.max(450, startSize.X.Offset + diff.X), 0, math.max(300, startSize.Y.Offset + diff.Y))
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+end
+
+task.spawn(EnableResize)
+
+-- [ ปุ่มลอยเปิด/ปิด ]
+local ScreenGui = Instance.new("ScreenGui")
+local ToggleButton = Instance.new("TextButton")
+local UICorner = Instance.new("UICorner")
+local UIGradient = Instance.new("UIGradient")
+local Icon = Instance.new("ImageLabel")
+local Title = Instance.new("TextLabel")
+local UIStroke = Instance.new("UIStroke")
+
+ScreenGui.Name = "BOSS69_ToggleUI"
+ScreenGui.Parent = CoreGui
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+ToggleButton.Name = "ToggleButton"
+ToggleButton.Parent = ScreenGui
+ToggleButton.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+ToggleButton.BackgroundTransparency = 0.1
+ToggleButton.Position = UDim2.new(0.05, 0, 0.1, 0)
+ToggleButton.Size = UDim2.new(0, 160, 0, 45)
+ToggleButton.Text = "" 
+ToggleButton.Active = true
+ToggleButton.Draggable = true 
+
+UICorner.CornerRadius = UDim.new(0, 25)
+UICorner.Parent = ToggleButton
+
+UIStroke.Thickness = 2
+UIStroke.Transparency = 0.3
+UIStroke.Color = Color3.fromRGB(255, 255, 255)
+UIStroke.Parent = ToggleButton
+
+UIGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 230, 255)), 
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 230))
+}
+UIGradient.Parent = UIStroke
+
+Icon.Name = "Icon"
+Icon.Parent = ToggleButton
+Icon.BackgroundTransparency = 1
+Icon.Position = UDim2.new(0, 12, 0, 7)
+Icon.Size = UDim2.new(0, 30, 0, 30)
+Icon.Image = "rbxassetid://6031264146" 
+Icon.ImageColor3 = Color3.fromRGB(255, 255, 255)
+
+Title.Name = "Title"
+Title.Parent = ToggleButton
+Title.BackgroundTransparency = 1
+Title.Position = UDim2.new(0, 48, 0, 0)
+Title.Size = UDim2.new(0, 100, 1, 0)
+Title.Font = Enum.Font.GothamBold
+Title.Text = "BOSS69" 
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 14
+Title.TextXAlignment = Enum.TextXAlignment.Left
+
+ToggleButton.MouseButton1Click:Connect(function()
+    Window:Minimize()
+    
+    -- เอฟเฟกต์ระลอก
+    local ripple = Instance.new("Frame")
+    ripple.Size = UDim2.new(0, 0, 0, 0)
+    ripple.Position = UDim2.new(0.5, 0, 0.5, 0)
+    ripple.AnchorPoint = Vector2.new(0.5, 0.5)
+    ripple.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    ripple.BackgroundTransparency = 0.5
+    ripple.BorderSizePixel = 0
+    ripple.Parent = ToggleButton
+    ripple.ZIndex = 0
+    
+    local rippleCorner = Instance.new("UICorner")
+    rippleCorner.CornerRadius = UDim.new(1, 0)
+    rippleCorner.Parent = ripple
+    
+    local rippleTween = TweenService:Create(ripple, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        Size = UDim2.new(2, 0, 2, 0),
+        BackgroundTransparency = 1
+    })
+    rippleTween:Play()
+    rippleTween.Completed:Connect(function() ripple:Destroy() end)
+    
+    ToggleButton:TweenSize(UDim2.new(0, 150, 0, 40), "Out", "Quad", 0.1, true)
+    task.wait(0.1)
+    ToggleButton:TweenSize(UDim2.new(0, 160, 0, 45), "Out", "Back", 0.15, true)
+end)
+
+-- [ แถบเมนู ]
+local Tabs = {
+    Main = Window:AddTab({ Title = "ฟังก์ชันหลัก", Icon = "star" }),
+    Settings = Window:AddTab({ Title = "ตั้งค่าเมนู", Icon = "settings" })
+}
+
+local Options = Fluent.Options
+local SelectedPlayer = nil
+local NoclipLoop = nil
+local ESP_Enabled = false
+local ESP_Storage = {}
+local SpeedEnabled = false
+local SpeedValue = 16
+local BrightEnabled = false
+local BrightValue = 2
+local Lighting = game:GetService("Lighting")
+
+local DefaultBrightness = Lighting.Brightness
+local DefaultClockTime = Lighting.ClockTime
+local DefaultGlobalShadows = Lighting.GlobalShadows
+
+-- [[ ฟังก์ชันเสริม ]]
+local function GetPlayerList()
+    local list = {}
+    for _, p in pairs(game:GetService("Players"):GetPlayers()) do
+        if p ~= game:GetService("Players").LocalPlayer then
+            table.insert(list, p.DisplayName .. " (@" .. p.Name .. ")")
+        end
+    end
+    return list
+end
+
+local function CreateESP(plr)
+    local Billboard = Instance.new("BillboardGui")
+    local TextLabel = Instance.new("TextLabel")
+    Billboard.Name = "BOSS69_ESP"
+    Billboard.Size = UDim2.new(0, 100, 0, 30)
+    Billboard.AlwaysOnTop = true
+    Billboard.ExtentsOffset = Vector3.new(0, 3, 0)
+    Billboard.Parent = CoreGui
+    
+    TextLabel.Parent = Billboard
+    TextLabel.BackgroundTransparency = 1
+    TextLabel.Size = UDim2.new(1, 0, 1, 0)
+    TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TextLabel.TextSize = 10
+    
+    ESP_Storage[plr] = Billboard
+    
+    local Connection
+    Connection = game:GetService("RunService").Heartbeat:Connect(function()
+        if ESP_Enabled and plr.Character and plr.Character:FindFirstChild("Head") then
+            local head = plr.Character.Head
+            local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+            local lpChar = game.Players.LocalPlayer.Character
+            local dist = 0
+            if lpChar and lpChar:FindFirstChild("Head") then
+                dist = math.floor((head.Position - lpChar.Head.Position).Magnitude)
+            end
+            
+            Billboard.Adornee = head
+            Billboard.Enabled = true
+            TextLabel.Text = string.format("%s\nHP: %d | Dist: %d", plr.DisplayName, (hum and hum.Health or 0), dist)
+        else
+            Billboard.Enabled = false
+            if not plr.Parent then
+                Billboard:Destroy()
+                Connection:Disconnect()
+                ESP_Storage[plr] = nil
+            end
+        end
+    end)
+end
+
+-- [[ ส่วนฟังก์ชันหลัก ]]
+do
+    Tabs.Main:AddSection("ระบบโกงหลัก")
+
+    Tabs.Main:AddToggle("Noclip", {Title = "เดินทะลุกำแพง (Noclip)", Default = false, Description = "ทำให้คุณสามารถเดินผ่านสิ่งกีดขวางได้"}):OnChanged(function(v)
+        if v then
+            NoclipLoop = game:GetService("RunService").Stepped:Connect(function()
+                if game.Players.LocalPlayer.Character then
+                    for _, part in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+                        if part:IsA("BasePart") then part.CanCollide = false end
+                    end
+                end
+            end)
+        else
+            if NoclipLoop then NoclipLoop:Disconnect() NoclipLoop = nil end
+            if game.Players.LocalPlayer.Character then
+                for _, part in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then part.CanCollide = true end
+                end
+            end
+        end
+    end)
+
+    Tabs.Main:AddToggle("ESP", {Title = "มองผู้เล่น (ESP)", Default = false, Description = "แสดงชื่อ เลือด และระยะห่างของผู้เล่นคนอื่น"}):OnChanged(function(v)
+        ESP_Enabled = v
+        if v then
+            for _, plr in pairs(game.Players:GetPlayers()) do
+                if plr ~= game.Players.LocalPlayer then CreateESP(plr) end
+            end
+        else
+            for _, bbg in pairs(ESP_Storage) do bbg:Destroy() end
+            ESP_Storage = {}
+        end
+    end)
+
+    Tabs.Main:AddSection("ความเร็วและการมองเห็น")
+
+    Tabs.Main:AddToggle("SpeedToggle", {Title = "เปิดใช้งาน วิ่งไว", Default = false}):OnChanged(function(v)
+        SpeedEnabled = v
+        if not v and game.Players.LocalPlayer.Character then
+            game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = 16
+        end
+    end)
+
+    local SpeedSlider = Tabs.Main:AddSlider("SpeedSlider", {
+        Title = "แถบปรับความเร็ว (16 - 500)",
+        Min = 16, Max = 500, Default = 16, Rounding = 0,
+        Callback = function(v) SpeedValue = v end
+    })
+
+    Tabs.Main:AddInput("SpeedInput", {
+        Title = "พิมพ์ตัวเลขความเร็ว (ไม่จำกัด)",
+        Default = "16",
+        Placeholder = "ใส่ตัวเลขได้ตามใจชอบ...",
+        Numeric = true,
+        Finished = true,
+        Callback = function(v)
+            local num = tonumber(v)
+            if num then
+                SpeedValue = num
+                if num >= 16 and num <= 500 then SpeedSlider:SetValue(num) end
+            end
+        end
+    })
+
+    Tabs.Main:AddToggle("BrightToggle", {Title = "เปิดใช้งาน แมพสว่าง (FullBright)", Default = false}):OnChanged(function(v)
+        BrightEnabled = v
+        if not v then
+            Lighting.Brightness = DefaultBrightness
+            Lighting.ClockTime = DefaultClockTime
+            Lighting.GlobalShadows = DefaultGlobalShadows
+        else
+            Lighting.GlobalShadows = false
+        end
+    end)
+
+    local BrightSlider = Tabs.Main:AddSlider("BrightSlider", {
+        Title = "แถบปรับความสว่าง (0 - 50)",
+        Min = 0, Max = 50, Default = 2, Rounding = 0,
+        Callback = function(v) BrightValue = v end
+    })
+
+    Tabs.Main:AddInput("BrightInput", {
+        Title = "พิมพ์ตัวเลขความสว่าง (ไม่จำกัด)",
+        Default = "2",
+        Placeholder = "ใส่ตัวเลขได้ตามใจชอบ...",
+        Numeric = true,
+        Finished = true,
+        Callback = function(v)
+            local num = tonumber(v)
+            if num then
+                BrightValue = num
+                if num >= 0 and num <= 50 then BrightSlider:SetValue(num) end
+            end
+        end
+    })
+
+    Tabs.Main:AddSection("ระบบวาร์ป (Teleport)")
+
+    local PlayerDropdown = Tabs.Main:AddDropdown("PlayerDropdown", {
+        Title = "เลือกผู้เล่นที่ต้องการวาร์ปไปหา",
+        Values = GetPlayerList(),
+        Multi = false,
+        Default = nil,
+    })
+
+    PlayerDropdown:OnChanged(function(choice)
+        for _, p in pairs(game:GetService("Players"):GetPlayers()) do
+            if choice and choice:find("@" .. p.Name) then SelectedPlayer = p break end
+        end
+    end)
+
+    local function RefreshPlayers()
+        PlayerDropdown:SetValues(GetPlayerList())
+    end
+    game.Players.PlayerAdded:Connect(RefreshPlayer
+    local function RefreshPlayers()
+        PlayerDropdown:SetValues(GetPlayerList())
+    end
+    game.Players.PlayerAdded:Connect(RefreshPlayers)
+    game.Players.PlayerRemoving:Connect(RefreshPlayers)
+    RefreshPlayers()
+    
+    local TPLoop
+    Tabs.Main:AddToggle("TPToggle", {Title = "วาร์ปติดตัวผู้เล่น (TP Loop)", Default = false, Description = "วาร์ปไปติดหลังผู้เล่นที่เลือกตลอดเวลา"}):OnChanged(function(v)
+        if v then
+            TPLoop = game:GetService("RunService").Heartbeat:Connect(function()
+                if SelectedPlayer and SelectedPlayer.Character and SelectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    game.Players.LocalPlayer.Character:SetPrimaryPartCFrame(SelectedPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3))
+                end
+            end)
+        else
+            if TPLoop then TPLoop:Disconnect() TPLoop = nil end
+        end
+    end)
+
+    Tabs.Main:AddSection("สคริปต์ภายนอก")
+
+    Tabs.Main:AddButton({
+        Title = "รันสคริปต์บิน (Nameless Admin)",
+        Callback = function() loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-nameless-admin-15646"))() end
+    })
+
+    Tabs.Main:AddButton({
+        Title = "ปลดล็อกมุมกล้อง",
+        Description = "ซูมออกได้ไม่จำกัดและปลดล็อกระยะกล้อง",
+        Callback = function()
+            local lp = game.Players.LocalPlayer
+            lp.CameraMaxZoomDistance = 100000
+            lp.CameraMinZoomDistance = 0.5
+            lp.CameraMode = Enum.CameraMode.Classic
+            workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
+        end
+    })
+
+    Tabs.Main:AddButton({
+        Title = "โหลดสคริปต์เสริม 1",
+        Callback = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/oopplprt041-crypto/Sjejjwueuruurrururururruru/refs/heads/main/Yyyyyyyyyyyyyy.lua"))() end
+    })
+
+    Tabs.Main:AddButton({
+        Title = "โหลดสคริปต์เสริม 2",
+        Callback = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/oopplprt041-crypto/Sisdudududdu/refs/heads/main/Djddifimssm.lua"))() end
+    })
+
+    Tabs.Main:AddButton({
+        Title = "โหลดตัวจัดการวาร์ป (GUI)",
+        Callback = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/oopplprt041-crypto/Sususuddu/refs/heads/main/Sjsjdjdj.lua"))() end
+    })
+
+    Tabs.Main:AddButton({
+        Title = "โหลดสคริปต์ภายนอก (Rdfffffr)",
+        Description = "โหลดสคริปต์เพิ่มเติมจากลิงก์ที่คุณระบุ",
+        Callback = function() 
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/oopplprt041-crypto/Sddddf/refs/heads/main/Rdfffffr.lua"))() 
+        end
+    })
+end
+
+-- [[ ระบบทำงานเบื้องหลัง ]]
+game:GetService("RunService").Heartbeat:Connect(function()
+    if SpeedEnabled and game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+        game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = SpeedValue
+    end
+    if BrightEnabled then 
+        Lighting.Brightness = BrightValue 
+        Lighting.ClockTime = 14 
+    end
+end)
+
+SaveManager:SetLibrary(Fluent)
+InterfaceManager:SetLibrary(Fluent)
+SaveManager:IgnoreThemeSettings()
+InterfaceManager:SetFolder("BOSS69_Configs") 
+SaveManager:SetFolder("BOSS69_Configs/games")
+
+InterfaceManager:BuildInterfaceSection(Tabs.Settings)
+SaveManager:BuildConfigSection(Tabs.Settings)
+
+-- [[ ฟังก์ชันแปลภาษาไทย ]]
+local function ApplyThai()
+    local function Replace(obj)
+        if obj:IsA("TextLabel") or obj:IsA("TextButton") then
+            if obj.Text:find("inteface") then
+                obj.Text = "กดปุ่ม LeftControl เพื่อเปิด/ปิดหน้าต่างเมนู"
+            end
+
+            local ThaiMap = {
+                ["Interface"] = "หน้าตาเมนู",
+                ["Theme"] = "ธีมสี",
+                ["Changes the interface theme."] = "เปลี่ยนสีพื้นหลังของเมนู",
+                ["Acrylic"] = "เอฟเฟกต์เบลอ (Acrylic)",
+                ["The blurred background requires graphic quality 8+"] = "ต้องปรับกราฟิกเกม 8 ขึ้นไป",
+                ["Transparency"] = "ความโปร่งใส",
+                ["Makes the interface transparent."] = "ทำให้เมนูดูโปร่งแสง",
+                ["Minimize Bind"] = "ปุ่ม ย่อ/ขยาย เมนู",
+                ["Configuration"] = "การจัดการตั้งค่า (Config)",
+                ["Config name"] = "ชื่อไฟล์ตั้งค่า",
+                ["Config list"] = "รายการไฟล์ที่เซฟ",
+                ["Create config"] = "สร้างไฟล์ใหม่",
+                ["Load config"] = "โหลดค่าที่เซฟ",
+                ["Overwrite config"] = "บันทึกทับไฟล์เดิม",
+                ["Refresh list"] = "รีเฟรชรายการ",
+                ["Set as autoload"] = "โหลดอัตโนมัติ",
+                ["Close"] = "ปิดเมนู",
+                ["Are you sure you want to unload the interface?"] = "คุณต้องการปิดหน้าต่างสคริปต์นี้ใช่ไหม?",
+                ["Yes"] = "ใช่ (ปิด)",
+                ["No"] = "ไม่ (ยกเลิก)"
+            }
+
+            if ThaiMap[obj.Text] then
+                obj.Text = ThaiMap[obj.Text]
+            end
+        end
+    end
+
+    CoreGui.DescendantAdded:Connect(Replace)
+    for _, child in pairs(CoreGui:GetDescendants()) do
+        Replace(child)
+    end
+end
+
+task.spawn(ApplyThai)
+
+Window:SelectTab(1)
+SaveManager:LoadAutoloadConfig()
